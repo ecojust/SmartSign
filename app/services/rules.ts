@@ -23,7 +23,7 @@ export default class Music {
     }
   }
 
-  static getSearchListScript(key: string) {
+  static getSearchListScript(key: string, url?: string) {
     switch (key) {
       case "hifini":
         return `
@@ -49,7 +49,8 @@ export default class Music {
                 res.push({
                   title:item.querySelector('.aplayer-list-title').innerText,
                   author:item.querySelector('.aplayer-list-author').innerText,
-                  index:index
+                  clickIndex:index,
+                  url:"${url}"
                 })
             });
             window.ReactNativeWebView.postMessage(JSON.stringify(res));
@@ -59,44 +60,42 @@ export default class Music {
         true;
         `;
 
-      case "jbsou1":
-        return `
-        window.onload = ()=>{
-            // const lis = document.querySelectorAll('.aplayer-list li');
-
-            // document.querySelector('.am-topbar')?.remove();
-            // document.querySelector('.google-auto-placed')?.remove();
-            // document.querySelector('.am-padding-vertical')?.remove();
-            // document.querySelector('.am-text-center')?.remove();
-            // document.querySelector('#j-back')?.remove();
-            // document.querySelector('#myhkplayer')?.remove();
-            // const res = [];
-            // lis.forEach((item,index)=>{
-            //     res.push({
-            //       title:item.querySelector('.aplayer-list-title').innerText,
-            //       author:item.querySelector('.aplayer-list-author').innerText,
-            //       index:index
-            //     })
-            // });
-            // window.ReactNativeWebView.postMessage(JSON.stringify(res));
-            window.ReactNativeWebView.postMessage(666);
-
-        }
-        true;
-        `;
-
       default:
         return "";
     }
   }
 
-  static getSearchResourceScript(key: string) {
+  static getSearchResourceScript(key: string, item: any) {
     switch (key) {
       case "hifini":
         return `
         
         
         `;
+
+      case "jbsou":
+        return `
+          setTimeout(()=>{
+            document.querySelector('.am-topbar')?.remove();
+            document.querySelector('.google-auto-placed')?.remove();
+            document.querySelector('.am-padding-vertical')?.remove();
+            document.querySelector('.am-text-center')?.remove();
+            document.querySelector('#j-back')?.remove();
+            document.querySelector('#myhkplayer')?.remove();
+
+            const lis = document.querySelectorAll('.aplayer-list li');
+            const clickItem = lis[${item.clickIndex}];
+            clickItem.click();
+            setTimeout(()=>{
+              const playSrc = document.querySelector('#j-src').value;
+              window.ReactNativeWebView.postMessage(playSrc);
+            },500)
+        },8000)
+        true;
+        `;
+
+      default:
+        return "";
     }
   }
 }

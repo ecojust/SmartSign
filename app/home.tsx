@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Swiper from "react-native-swiper";
 import { useEffect, useState, useRef } from "react";
 import { WebViewFetcher } from "./services/webviewFetcher";
@@ -19,12 +20,15 @@ const { width } = Dimensions.get("window");
 
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState(0);
-  const [debugOpen, setDebugOpen] = useState(true);
+  const [debugOpen, setDebugOpen] = useState(false);
   const [fetchUrl, setFetchUrl] = useState("https://www.baidu.com");
   const [injectScript, setInjectScript] = useState("");
   const [step, setStep] = useState("");
   const [sites, setSites] = useState<any[]>([]);
   const [songlist, setSonglist] = useState<any[]>([]);
+  const [localSonglist, setLocalSonglist] = useState<any[]>([]);
+
+  const [currentSong, setCurrentSong] = useState<any>({});
 
   const [selectedSite, setSelectedSite] = useState<string>("");
   const [searchText, setSearchText] = useState<string>("就是我");
@@ -41,19 +45,68 @@ export default function HomeScreen() {
     console.log("Search Text:", searchText);
     // 在这里添加搜索逻辑
     if (selectedSite && searchText) {
-      // setDebugOpen(true);
+      setStep("searchList");
+
       const url = Music.getSearchListUrl(selectedSite, searchText);
       setFetchUrl(url);
-      setInjectScript(Music.getSearchListScript(selectedSite));
+      setInjectScript(Music.getSearchListScript(selectedSite, url));
+      setDebugOpen(true);
 
       console.log(url);
     }
   };
 
+  const handleSongPress = async (item: any) => {
+    setCurrentSong(item);
+    setStep("searchResource");
+    setDebugOpen(false);
+
+    setTimeout(() => {
+      setFetchUrl(item.url);
+      setInjectScript(Music.getSearchResourceScript(selectedSite, item));
+      setDebugOpen(true);
+    }, 1000);
+
+    console.log("Song pressed:", item);
+  };
+
+  const readLocalSongs = async () => {
+    const songs = await AsyncStorage.getItem("localSong");
+    if (songs) {
+      setLocalSonglist(JSON.parse(songs));
+    }
+  };
+
   const handleContentFetched = async (str: string) => {
-    const songlist = JSON.parse(str);
-    console.log(songlist);
-    setSonglist(songlist);
+    if (step === "searchList") {
+      const songlist = JSON.parse(str);
+      setSonglist(songlist);
+      console.log(songlist);
+    } else if (step === "searchResource") {
+      setCurrentSong(
+        Object.assign(currentSong, {
+          src: str,
+        })
+      );
+
+      try {
+        const localSong = await AsyncStorage.getItem("localSong");
+        let newlocalsong = [];
+        if (localSong) {
+          newlocalsong = JSON.parse(localSong);
+          newlocalsong.push(currentSong);
+        } else {
+          newlocalsong = [currentSong];
+        }
+        setLocalSonglist(newlocalsong);
+        await AsyncStorage.setItem("localSong", JSON.stringify(newlocalsong));
+        console.log("Song saved to AsyncStorage");
+      } catch (e) {
+        console.error("Error saving song to AsyncStorage:", e);
+      }
+      console.log(currentSong);
+      setDebugOpen(false);
+    }
   };
 
   useEffect(() => {
@@ -62,6 +115,7 @@ export default function HomeScreen() {
     if (Music.sites.length > 0) {
       setSelectedSite(Music.sites[0].key);
     }
+    readLocalSongs();
     console.log("redner");
   }, []);
 
@@ -141,9 +195,16 @@ export default function HomeScreen() {
                 data={songlist}
                 keyExtractor={(item, index) => index.toString()}
                 renderItem={({ item }) => (
-                  <TouchableOpacity>
-                    <ThemedText>{item.title}</ThemedText>
-                    <ThemedText>{item.author}</ThemedText>
+                  <TouchableOpacity
+                    style={styles.songItem}
+                    onPress={() => handleSongPress(item)}
+                  >
+                    <ThemedText style={styles.songTitleText}>
+                      {item.title}
+                    </ThemedText>
+                    <ThemedText style={styles.songAuthorText}>
+                      {item.author}
+                    </ThemedText>
                   </TouchableOpacity>
                 )}
               />
@@ -166,7 +227,23 @@ export default function HomeScreen() {
           </View>
 
           <View key="playlistTab" style={styles.slide}>
-            <ThemedText>播放列表内容</ThemedText>
+            <FlatList
+              data={localSonglist}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.songItem}
+                  onPress={() => handleSongPress(item)}
+                >
+                  <ThemedText style={styles.songTitleText}>
+                    {item.title}
+                  </ThemedText>
+                  <ThemedText style={styles.songAuthorText}>
+                    {item.author}
+                  </ThemedText>
+                </TouchableOpacity>
+              )}
+            />
           </View>
         </Swiper>
       </View>
@@ -216,6 +293,24 @@ const styles = StyleSheet.create({
   searchResult: {
     height: 330,
   },
+  songList: {
+    flex: 1,
+    width: "100%",
+    paddingHorizontal: 20,
+  },
+  songItem: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  songTitleText: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  songAuthorText: {
+    fontSize: 14,
+    color: "#666",
+  },
   tabs: {
     flexDirection: "row",
     width: "100%",
@@ -244,7 +339,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     alignItems: "center",
     backgroundColor: "#f4f4f4",
-    height: 200,
+    height: "auto",
   },
   searchBox: {
     width: "90%",
