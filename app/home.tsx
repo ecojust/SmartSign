@@ -6,6 +6,7 @@ import {
   Dimensions,
   TextInput,
   TouchableOpacity,
+  FlatList,
 } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -23,8 +24,10 @@ export default function HomeScreen() {
   const [injectScript, setInjectScript] = useState("");
   const [step, setStep] = useState("");
   const [sites, setSites] = useState<any[]>([]);
+  const [songlist, setSonglist] = useState<any[]>([]);
+
   const [selectedSite, setSelectedSite] = useState<string>("");
-  const [searchText, setSearchText] = useState<string>("");
+  const [searchText, setSearchText] = useState<string>("就是我");
 
   const swiperRef = useRef<Swiper>(null);
 
@@ -37,12 +40,20 @@ export default function HomeScreen() {
     console.log("Selected Site:", selectedSite);
     console.log("Search Text:", searchText);
     // 在这里添加搜索逻辑
-    setFetchUrl(Music.getSearchListUrl(selectedSite, searchText));
-    setInjectScript(Music.getSearchListScript(selectedSite));
+    if (selectedSite && searchText) {
+      // setDebugOpen(true);
+      const url = Music.getSearchListUrl(selectedSite, searchText);
+      setFetchUrl(url);
+      setInjectScript(Music.getSearchListScript(selectedSite));
+
+      console.log(url);
+    }
   };
 
   const handleContentFetched = async (str: string) => {
-    console.log(str);
+    const songlist = JSON.parse(str);
+    console.log(songlist);
+    setSonglist(songlist);
   };
 
   useEffect(() => {
@@ -51,7 +62,8 @@ export default function HomeScreen() {
     if (Music.sites.length > 0) {
       setSelectedSite(Music.sites[0].key);
     }
-  }, [searchText]);
+    console.log("redner");
+  }, []);
 
   return (
     <ThemedView style={styles.container}>
@@ -79,11 +91,19 @@ export default function HomeScreen() {
         >
           <View key="searchTab" style={styles.slide}>
             <View style={styles.searchBox}>
-              <TextInput
+              {/* <TextInput
                 style={styles.searchInput}
                 placeholder="请输入关键字"
                 placeholderTextColor="#dbdbdb"
                 value={searchText}
+              /> */}
+
+              <TextInput
+                style={styles.searchInput}
+                placeholder="请输入内容"
+                placeholderTextColor="#dbdbdb"
+                value={searchText}
+                onChangeText={(value) => setSearchText(value)}
               />
             </View>
             <TouchableOpacity
@@ -114,6 +134,19 @@ export default function HomeScreen() {
                   </ThemedText>
                 </TouchableOpacity>
               ))}
+            </View>
+
+            <View style={styles.searchResult}>
+              <FlatList
+                data={songlist}
+                keyExtractor={(item, index) => index.toString()}
+                renderItem={({ item }) => (
+                  <TouchableOpacity>
+                    <ThemedText>{item.title}</ThemedText>
+                    <ThemedText>{item.author}</ThemedText>
+                  </TouchableOpacity>
+                )}
+              />
             </View>
 
             <View style={styles.debugWeb}>
@@ -155,7 +188,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#E0BBE4",
+    backgroundColor: "#ffffff",
   },
   statusBar: {
     flexDirection: "row",
@@ -179,11 +212,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     flex: 1,
   },
+
+  searchResult: {
+    height: 330,
+  },
   tabs: {
     flexDirection: "row",
     width: "100%",
     justifyContent: "space-around",
-    backgroundColor: "#FFF000",
+    backgroundColor: "#FFff00",
   },
   tab: {
     fontSize: 16,
@@ -199,14 +236,14 @@ const styles = StyleSheet.create({
   },
   wrapper: {
     // No specific styles needed for the wrapper itself, children will define layout
-    borderColor: "#E0BB00",
+    borderColor: "red",
     // flex: 1,
   },
   slide: {
     flex: 1,
     justifyContent: "flex-start",
     alignItems: "center",
-    backgroundColor: "#a1d523",
+    backgroundColor: "#f4f4f4",
     height: 200,
   },
   searchBox: {

@@ -1,12 +1,12 @@
 export default class Music {
   static sites: Array<any> = [
     {
-      name: "jbsou",
+      name: "煎饼搜",
       key: "jbsou",
       steps: ["searchList"],
     },
     {
-      name: "hifini",
+      name: "HiFiNi",
       key: "hifini",
       steps: ["searchList", "searchResource"],
     },
@@ -36,19 +36,55 @@ export default class Music {
       case "jbsou":
         return `
         setTimeout(()=>{
-            const lis = document.querySelector('.aplayer-list li');
+            const lis = document.querySelectorAll('.aplayer-list li');
+
+            document.querySelector('.am-topbar')?.remove();
+            document.querySelector('.google-auto-placed')?.remove();
+            document.querySelector('.am-padding-vertical')?.remove();
+            document.querySelector('.am-text-center')?.remove();
+            document.querySelector('#j-back')?.remove();
+            document.querySelector('#myhkplayer')?.remove();
             const res = [];
             lis.forEach((item,index)=>{
                 res.push({
-                  title:item.querySelector('.aplayer-list-title').innerText(),
-                  author:item.querySelector('.aplayer-list-author').innerText(),
+                  title:item.querySelector('.aplayer-list-title').innerText,
+                  author:item.querySelector('.aplayer-list-author').innerText,
                   index:index
                 })
             });
-            window.ReactNativeWebView.postMessage(res);
-        },3000)
+            window.ReactNativeWebView.postMessage(JSON.stringify(res));
+
+          
+        },8000)
         true;
         `;
+
+      case "jbsou1":
+        return `
+        window.onload = ()=>{
+            // const lis = document.querySelectorAll('.aplayer-list li');
+
+            // document.querySelector('.am-topbar')?.remove();
+            // document.querySelector('.google-auto-placed')?.remove();
+            // document.querySelector('.am-padding-vertical')?.remove();
+            // document.querySelector('.am-text-center')?.remove();
+            // document.querySelector('#j-back')?.remove();
+            // document.querySelector('#myhkplayer')?.remove();
+            // const res = [];
+            // lis.forEach((item,index)=>{
+            //     res.push({
+            //       title:item.querySelector('.aplayer-list-title').innerText,
+            //       author:item.querySelector('.aplayer-list-author').innerText,
+            //       index:index
+            //     })
+            // });
+            // window.ReactNativeWebView.postMessage(JSON.stringify(res));
+            window.ReactNativeWebView.postMessage(666);
+
+        }
+        true;
+        `;
+
       default:
         return "";
     }
