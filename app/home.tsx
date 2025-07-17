@@ -15,6 +15,7 @@ import Swiper from "react-native-swiper";
 import { useEffect, useState, useRef } from "react";
 import { WebViewFetcher } from "./services/webviewFetcher";
 import Music from "./services/rules";
+import MusicPlayer from "./components/MusicPlayer";
 
 const { width } = Dimensions.get("window");
 
@@ -69,6 +70,8 @@ export default function HomeScreen() {
 
     console.log("Song pressed:", item);
   };
+
+
 
   const readLocalSongs = async () => {
     const songs = await AsyncStorage.getItem("localSong");
@@ -223,7 +226,7 @@ export default function HomeScreen() {
           </View>
 
           <View key="playerTab" style={styles.slide}>
-            <ThemedText>播放器内容</ThemedText>
+            <MusicPlayer song={currentSong} />
           </View>
 
           <View key="playlistTab" style={styles.slide}>
@@ -233,7 +236,7 @@ export default function HomeScreen() {
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={styles.songItem}
-                  onPress={() => handleSongPress(item)}
+                  onPress={() => setCurrentSong(item)}
                 >
                   <ThemedText style={styles.songTitleText}>
                     {item.title}
