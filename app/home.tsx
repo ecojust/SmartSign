@@ -7,6 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
+  Modal,
 } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -16,12 +17,15 @@ import { useEffect, useState, useRef } from "react";
 import { WebViewFetcher } from "./services/webviewFetcher";
 import Music from "./services/rules";
 import MusicPlayer from "./components/MusicPlayer";
+import { Alert } from "react-native";
 
 const { width } = Dimensions.get("window");
 
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState(0);
   const [debugOpen, setDebugOpen] = useState(false);
+  const [showResult, setShowResult] = useState(false);
+
   const [fetchUrl, setFetchUrl] = useState("https://www.baidu.com");
   const [injectScript, setInjectScript] = useState("");
   const [step, setStep] = useState("");
@@ -32,7 +36,7 @@ export default function HomeScreen() {
   const [currentSong, setCurrentSong] = useState<any>({});
 
   const [selectedSite, setSelectedSite] = useState<string>("");
-  const [searchText, setSearchText] = useState<string>("就是我");
+  const [searchText, setSearchText] = useState<string>("");
 
   const swiperRef = useRef<Swiper>(null);
 
@@ -41,19 +45,27 @@ export default function HomeScreen() {
     console.log("Current Swiper index:", index);
   };
 
+  const playSong = (item: any) => {
+    setCurrentSong(item);
+    console.log("playSong", item);
+  };
+
   const handleSearch = () => {
     console.log("Selected Site:", selectedSite);
     console.log("Search Text:", searchText);
     // 在这里添加搜索逻辑
     if (selectedSite && searchText) {
       setStep("searchList");
-
-      const url = Music.getSearchListUrl(selectedSite, searchText);
+      setDebugOpen(false);
+      const url = Music.getSearchUrl(selectedSite, searchText);
       setFetchUrl(url);
       setInjectScript(Music.getSearchListScript(selectedSite, url));
-      setDebugOpen(true);
-
+      setTimeout(() => {
+        setDebugOpen(true);
+      }, 1000);
       console.log(url);
+    } else {
+      Alert.alert("提示", "请输入搜索关键字");
     }
   };
 
@@ -61,54 +73,72 @@ export default function HomeScreen() {
     setCurrentSong(item);
     setStep("searchResource");
     setDebugOpen(false);
+    setFetchUrl(item.url);
+    setInjectScript(Music.getSearchResourceScript(selectedSite, item));
 
     setTimeout(() => {
-      setFetchUrl(item.url);
-      setInjectScript(Music.getSearchResourceScript(selectedSite, item));
       setDebugOpen(true);
     }, 1000);
-
+    setShowResult(false); // 隐藏搜索结果弹窗
     console.log("Song pressed:", item);
   };
 
-
-
   const readLocalSongs = async () => {
-    const songs = await AsyncStorage.getItem("localSong");
+    const songs = await AsyncStorage.getItem("localSonglist");
     if (songs) {
       setLocalSonglist(JSON.parse(songs));
     }
   };
 
-  const handleContentFetched = async (str: string) => {
-    if (step === "searchList") {
-      const songlist = JSON.parse(str);
-      setSonglist(songlist);
-      console.log(songlist);
-    } else if (step === "searchResource") {
-      setCurrentSong(
-        Object.assign(currentSong, {
-          src: str,
-        })
-      );
+  // 移除本地歌曲方法
+  const removeSongFromLocal = async (removeIndex: number) => {
+    const updatedList = localSonglist.filter((_, idx) => idx !== removeIndex);
+    setLocalSonglist(updatedList);
+    // 假设使用 AsyncStorage 进行本地持久化
+    if (typeof AsyncStorage !== "undefined") {
+      await AsyncStorage.setItem("localSonglist", JSON.stringify(updatedList));
+    }
+    // 若当前播放歌曲被移除，自动切换播放状态
+    if (
+      currentSong &&
+      localSonglist[removeIndex] &&
+      currentSong.src === localSonglist[removeIndex].src
+    ) {
+      setCurrentSong(undefined);
+    }
+  };
 
-      try {
-        const localSong = await AsyncStorage.getItem("localSong");
-        let newlocalsong = [];
-        if (localSong) {
-          newlocalsong = JSON.parse(localSong);
-          newlocalsong.push(currentSong);
-        } else {
-          newlocalsong = [currentSong];
-        }
-        setLocalSonglist(newlocalsong);
-        await AsyncStorage.setItem("localSong", JSON.stringify(newlocalsong));
-        console.log("Song saved to AsyncStorage");
-      } catch (e) {
-        console.error("Error saving song to AsyncStorage:", e);
+  const pushNewSong = async (item: any) => {
+    try {
+      const localSong = await AsyncStorage.getItem("localSonglist");
+      let newlocalsong = [];
+      if (localSong) {
+        newlocalsong = JSON.parse(localSong);
+        newlocalsong.push(item);
+      } else {
+        newlocalsong = [item];
       }
-      console.log(currentSong);
-      setDebugOpen(false);
+      setLocalSonglist(newlocalsong);
+      await AsyncStorage.setItem("localSonglist", JSON.stringify(newlocalsong));
+      console.log("Song saved to AsyncStorage");
+      Alert.alert("提示", "歌曲已添加");
+    } catch (e) {
+      console.error("Error saving song to AsyncStorage:", e);
+    }
+  };
+
+  const handleContentFetched = async (str: string) => {
+    const msg = JSON.parse(str);
+    if (!msg.action) {
+      return;
+    }
+    console.log(msg.action);
+    console.log(msg.data);
+    switch (msg.action) {
+      case "songResource":
+        // setCurrentSong(msg.data);
+        await pushNewSong(msg.data);
+        break;
     }
   };
 
@@ -159,7 +189,6 @@ export default function HomeScreen() {
                 style={styles.searchInput}
                 placeholder="请输入内容"
                 placeholderTextColor="#dbdbdb"
-                value={searchText}
                 onChangeText={(value) => setSearchText(value)}
               />
             </View>
@@ -193,25 +222,42 @@ export default function HomeScreen() {
               ))}
             </View>
 
-            <View style={styles.searchResult}>
-              <FlatList
-                data={songlist}
-                keyExtractor={(item, index) => index.toString()}
-                renderItem={({ item }) => (
+            <Modal
+              animationType="slide"
+              transparent={true}
+              visible={showResult}
+              onRequestClose={() => {
+                setShowResult(!showResult);
+              }}
+            >
+              <View style={styles.centeredView}>
+                <View style={styles.modalView}>
+                  <FlatList
+                    data={songlist}
+                    keyExtractor={(item, index) => index.toString()}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={styles.songItem}
+                        onPress={() => handleSongPress(item)}
+                      >
+                        <ThemedText style={styles.songTitleText}>
+                          {item.title}
+                        </ThemedText>
+                        <ThemedText style={styles.songAuthorText}>
+                          {item.author}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    )}
+                  />
                   <TouchableOpacity
-                    style={styles.songItem}
-                    onPress={() => handleSongPress(item)}
+                    style={styles.closeButton}
+                    onPress={() => setShowResult(false)}
                   >
-                    <ThemedText style={styles.songTitleText}>
-                      {item.title}
-                    </ThemedText>
-                    <ThemedText style={styles.songAuthorText}>
-                      {item.author}
-                    </ThemedText>
+                    <ThemedText style={styles.textStyle}>关闭</ThemedText>
                   </TouchableOpacity>
-                )}
-              />
-            </View>
+                </View>
+              </View>
+            </Modal>
 
             <View style={styles.debugWeb}>
               {debugOpen && (
@@ -233,18 +279,38 @@ export default function HomeScreen() {
             <FlatList
               data={localSonglist}
               keyExtractor={(item, index) => index.toString()}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.songItem}
-                  onPress={() => setCurrentSong(item)}
+              renderItem={({ item, index }) => (
+                <View
+                  style={[
+                    styles.songItem,
+                    currentSong && currentSong.title === item.title
+                      ? styles.playingSongItem
+                      : null,
+                  ]}
                 >
-                  <ThemedText style={styles.songTitleText}>
-                    {item.title}
-                  </ThemedText>
-                  <ThemedText style={styles.songAuthorText}>
-                    {item.author}
-                  </ThemedText>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.songInfo}
+                    onPress={() => playSong(item)}
+                  >
+                    <ThemedText style={styles.songTitleText}>
+                      {item.title}
+                    </ThemedText>
+                    <ThemedText style={styles.songAuthorText}>
+                      {item.author}
+                    </ThemedText>
+                    {/* <ThemedText style={styles.songTitleText} numberOfLines={1}>
+                      {item.duration}
+                    </ThemedText> */}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.removeButton}
+                    onPress={() => removeSongFromLocal(index)}
+                  >
+                    <ThemedText style={styles.removeButtonText}>
+                      移除
+                    </ThemedText>
+                  </TouchableOpacity>
+                </View>
               )}
             />
           </View>
@@ -302,17 +368,62 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   songItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    marginVertical: 4,
+    paddingHorizontal: 10,
+    width: "100%",
+  },
+
+  songInfo: {
+    flex: 1,
+    flexDirection: "column",
+    justifyContent: "center",
   },
   songTitleText: {
     fontSize: 16,
     fontWeight: "bold",
+    color: "#333",
+
+    height: 26,
   },
   songAuthorText: {
     fontSize: 14,
-    color: "#666",
+    color: "#888",
+    marginTop: 2,
+  },
+  removeButton: {
+    backgroundColor: "#E57373",
+    borderRadius: 16,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    marginLeft: 10,
+  },
+  removeButtonText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "bold",
+  },
+  playingSongItem: {
+    backgroundColor: "#FFF8E1",
+    borderColor: "#FFD54F",
+    borderWidth: 1,
+    shadowColor: "#FFD54F",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  playingTag: {
+    color: "#FFD54F",
+    fontSize: 12,
+    fontWeight: "bold",
   },
   tabs: {
     flexDirection: "row",
@@ -332,6 +443,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderColor: "#E0BBE4",
   },
+
   wrapper: {
     // No specific styles needed for the wrapper itself, children will define layout
     borderColor: "red",
@@ -350,6 +462,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     padding: 10,
     marginBottom: 10,
+    marginTop: 10,
   },
   searchInput: {
     fontSize: 16,
@@ -427,12 +540,42 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 10,
     height: 70,
+    display: "none",
   },
-  albumCover: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 10,
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 22,
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 35,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    width: "90%",
+    height: "70%",
+  },
+  closeButton: {
+    backgroundColor: "#E0BBE4",
+    borderRadius: 20,
+    padding: 10,
+    elevation: 2,
+    marginTop: 15,
+  },
+  textStyle: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center",
   },
   songTitle: {
     color: "#FFF",
@@ -444,3 +587,14 @@ const styles = StyleSheet.create({
     gap: 15,
   },
 });
+
+// 在文件顶部 function HomeScreen 之前添加辅助函数
+function formatDuration(duration: number | string) {
+  if (typeof duration === "string") {
+    duration = parseFloat(duration);
+  }
+  if (isNaN(duration) || duration <= 0) return "--:--";
+  const min = Math.floor(duration / 60);
+  const sec = Math.floor(duration % 60);
+  return `${min}:${sec.toString().padStart(2, "0")}`;
+}

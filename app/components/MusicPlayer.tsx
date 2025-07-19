@@ -47,7 +47,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ song }) => {
       setIsPlaying(status.isPlaying);
     }
 
-    console.log("onPlaybackStatusUpdate", status);
+    // console.log("onPlaybackStatusUpdate", status);
   };
 
   const handlePlayPause = async () => {
@@ -93,10 +93,9 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ song }) => {
             <Text style={styles.timeText}>{formatTime(position)}</Text>
             <Text style={styles.timeText}>{formatTime(duration)}</Text>
           </View>
-          <TouchableOpacity onPress={handlePlayPause} style={styles.playButton}>
-            <Text style={styles.playButtonText}>
-              {isPlaying ? "暂停" : "播放"}
-            </Text>
+          <TouchableOpacity onPress={handlePlayPause} style={[styles.playButton, {position: 'relative', overflow: 'hidden'}]}>
+            <View style={{position: 'absolute', left: 0, top: 0, bottom: 0, width: duration > 0 ? `${(position / duration) * 100}%` : '0%', backgroundColor: 'rgba(255,255,255,0.3)', zIndex: 1}} />
+            <Text style={[styles.playButtonText, {zIndex: 2, textAlign: 'center', width: '100%'}]}>{isPlaying ? '暂停' : '播放'}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -108,8 +107,9 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ song }) => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: "center",
+    width: "100%",
+    height: "100%",
+    justifyContent: "flex-start",
     alignItems: "center",
     backgroundColor: "#282828",
     padding: 20,

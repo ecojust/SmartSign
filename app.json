@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "findMusic",
-    "slug": "findMusic",
+    "slug": "findmusic",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -19,7 +19,8 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": [
-          "remote-notification"
+          "remote-notification",
+          "audio"
         ]
       }
     },
