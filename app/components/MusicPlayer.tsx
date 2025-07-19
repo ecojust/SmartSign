@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Audio } from "expo-av";
+import { LinearGradient } from "expo-linear-gradient";
 
 interface MusicPlayerProps {
   song: any;
@@ -74,7 +75,12 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ song }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={["#fff", "#ffe066", "#E0BBE4", "#1DB954"]}
+      start={{ x: 0.5, y: 1 }}
+      end={{ x: 0.5, y: 0 }}
+      style={styles.container}
+    >
       {song && song.title ? (
         <View>
           <Text style={styles.title}>{song.title}</Text>
@@ -93,15 +99,38 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ song }) => {
             <Text style={styles.timeText}>{formatTime(position)}</Text>
             <Text style={styles.timeText}>{formatTime(duration)}</Text>
           </View>
-          <TouchableOpacity onPress={handlePlayPause} style={[styles.playButton, {position: 'relative', overflow: 'hidden'}]}>
-            <View style={{position: 'absolute', left: 0, top: 0, bottom: 0, width: duration > 0 ? `${(position / duration) * 100}%` : '0%', backgroundColor: 'rgba(255,255,255,0.3)', zIndex: 1}} />
-            <Text style={[styles.playButtonText, {zIndex: 2, textAlign: 'center', width: '100%'}]}>{isPlaying ? '暂停' : '播放'}</Text>
+          <TouchableOpacity
+            onPress={handlePlayPause}
+            style={[
+              styles.playButton,
+              { position: "relative", overflow: "hidden" },
+            ]}
+          >
+            <View
+              style={{
+                position: "absolute",
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: duration > 0 ? `${(position / duration) * 100}%` : "0%",
+                backgroundColor: "rgba(255,255,255,0.3)",
+                zIndex: 1,
+              }}
+            />
+            <Text
+              style={[
+                styles.playButtonText,
+                { zIndex: 2, textAlign: "center", width: "100%" },
+              ]}
+            >
+              {isPlaying ? "暂停" : "播放"}
+            </Text>
           </TouchableOpacity>
         </View>
       ) : (
         <Text style={styles.noSongText}>请选择一首歌曲播放</Text>
       )}
-    </View>
+    </LinearGradient>
   );
 };
 
