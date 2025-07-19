@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Audio } from "expo-av";
-import { LinearGradient } from "expo-linear-gradient";
 
 interface MusicPlayerProps {
   song: any;
@@ -75,12 +74,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ song }) => {
   };
 
   return (
-    <LinearGradient
-      colors={["#fff", "#ffe066", "#E0BBE4", "#1DB954"]}
-      start={{ x: 0.5, y: 1 }}
-      end={{ x: 0.5, y: 0 }}
-      style={styles.container}
-    >
+    <View style={styles.container}>
       {song && song.title ? (
         <View>
           <Text style={styles.title}>{song.title}</Text>
@@ -130,7 +124,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ song }) => {
       ) : (
         <Text style={styles.noSongText}>请选择一首歌曲播放</Text>
       )}
-    </LinearGradient>
+    </View>
   );
 };
 
