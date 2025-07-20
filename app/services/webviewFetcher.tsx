@@ -30,7 +30,23 @@ export const WebViewFetcher = ({
         source={{ uri: url }}
         onLoad={() => setLoading(false)}
         onMessage={handleMessage}
-        injectedJavaScript={injectedScript}
+        injectedJavaScript={`
+          (function() {
+            window.open = function(url) {
+              window.location = url;
+            };
+            var links = document.querySelectorAll('a[target="_blank"]');
+            for (var i = 0; i < links.length; i++) {
+              links[i].setAttribute('target', '_self');
+            }
+          })();
+          ${injectedScript}
+        `}
+        setSupportMultipleWindows={false}
+        onShouldStartLoadWithRequest={(event) => {
+          // 阻止外部浏览器打开链接，全部在 WebView 内部加载
+          return true;
+        }}
       />
     </View>
   );
