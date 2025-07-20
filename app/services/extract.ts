@@ -3,17 +3,24 @@ export default class Extract {
     switch (key) {
       case "jbsou":
         return `
-            const song = {
-                siteKey:"jbsou",
-                title:document.querySelector('#j-name').value,
-                author:document.querySelector('#j-author').value,
-                url:window.location.href,
-                src:document.querySelector('#j-src').value
+            const extractLogic = ()=>{
+              try{
+                const song = {
+                  siteKey:"jbsou",
+                  title:document.querySelector('#j-name').value,
+                  author:document.querySelector('#j-author').value,
+                  url:window.location.href,
+                  src:document.querySelector('#j-src').value
+                }
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                  action:'${action}',
+                  data:song
+                }));
+              }catch(err){
+                // console.log(err);
+                alert('当前页面无法提取歌曲');
               }
-              window.ReactNativeWebView.postMessage(JSON.stringify({
-                action:'${action}',
-                data:song
-              }));
+            }
         `;
       case "22a5":
         return `

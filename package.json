@@ -1,5 +1,5 @@
 {
-  "name": "findMusic",
+  "name": "smartsign",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
@@ -35,6 +35,7 @@
     "expo-image-picker": "~16.0.6",
     "expo-linking": "~7.0.5",
     "expo-notifications": "~0.29.14",
+    "expo-react-native-toastify": "^1.0.19",
     "expo-router": "~4.0.20",
     "expo-splash-screen": "~0.29.24",
     "expo-status-bar": "~2.0.1",

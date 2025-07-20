@@ -18,8 +18,9 @@ import { WebViewFetcher } from "./services/webviewFetcher";
 import Music from "./services/rules";
 import MusicPlayer from "./components/MusicPlayer";
 import { Alert } from "react-native";
-import Toast from "react-native-root-toast";
-
+// import Toast from "react-native-root-toast";
+//@ts-ignore
+import ToastManager, { Toast } from "expo-react-native-toastify";
 const { width } = Dimensions.get("window");
 
 export default function HomeScreen() {
@@ -60,8 +61,8 @@ export default function HomeScreen() {
   const handleSongLoadError = (error: { song: any; error: Error }) => {
     setShowRefreshWebview(false);
     console.log("歌曲无法加载，需要更新", error.song);
-    Toast.show("歌曲无法加载，即将自动更新", {
-      duration: Toast.durations.SHORT,
+    Toast.info("歌曲无法加载，即将自动更新", {
+      duration: 1500,
     });
     setFetchUrl(error.song.url);
 
@@ -120,8 +121,8 @@ export default function HomeScreen() {
         setShowSearchWebview(true);
       }, 1000);
     } else {
-      Toast.show("请输入搜索关键字", {
-        duration: Toast.durations.SHORT,
+      Toast.info("请输入搜索关键字", {
+        duration: 1500,
       });
     }
   };
@@ -179,13 +180,13 @@ export default function HomeScreen() {
       const idx = newList.findIndex((s) => s.url === item.url);
       if (idx !== -1) {
         newList[idx] = item;
-        Toast.show(`歌曲${item.title}已更新`, {
-          duration: Toast.durations.SHORT,
+        Toast.info(`歌曲${item.title}已更新`, {
+          duration: 1500,
         });
       } else {
         newList.push(item);
-        Toast.show(`歌曲${item.title}已添加`, {
-          duration: Toast.durations.SHORT,
+        Toast.info(`歌曲${item.title}已添加`, {
+          duration: 1500,
         });
       }
       setLocalSonglist(newList);
@@ -232,6 +233,14 @@ export default function HomeScreen() {
     }
   };
 
+  const test = () => {
+    console.log(Toast);
+    Toast.info("Pausable message", {
+      duration: 1500, // 5 seconds
+      // position: "top",
+    });
+  };
+
   useEffect(() => {
     setFetchUrl("https://www.baidu.com");
     setSites(Music.sites);
@@ -245,6 +254,7 @@ export default function HomeScreen() {
   return (
     <ThemedView style={styles.container}>
       {/* 选项卡和搜索区域 */}
+      <ToastManager />
       <View style={styles.searchSection}>
         <View style={styles.tabs}>
           <ThemedText

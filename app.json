@@ -1,21 +1,21 @@
 {
   "expo": {
-    "name": "findMusic",
+    "name": "智签",
     "slug": "findmusic",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "SmartSign",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splash.png",
+      "image": "./assets/images/logo.png",
       "resizeMode": "cover",
       "backgroundColor": "transparent"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.juzisang.myapp",
+      "bundleIdentifier": "com.juzisang.smartsign",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": [
@@ -26,15 +26,27 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive.png",
+        "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.juzisang.myapp",
       "useNextNotificationsApi": true,
       "permissions": [
         "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.POST_NOTIFICATIONS"
-      ]
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.FOREGROUND_SERVICE"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": ""
+        }
+      },
+      "backgroundColor": "#ffffff",
+      "userInterfaceStyle": "automatic",
+      "softwareKeyboardLayoutMode": "pan",
+      "playback": {
+        "allowsBackgroundAudio": true
+      }
     },
     "web": {
       "bundler": "metro",
