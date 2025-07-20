@@ -18,17 +18,18 @@ import { WebViewFetcher } from "./services/webviewFetcher";
 import Music from "./services/rules";
 import MusicPlayer from "./components/MusicPlayer";
 import { Alert } from "react-native";
+import Toast from "react-native-root-toast";
 
 const { width } = Dimensions.get("window");
 
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState(0);
-  const [debugOpen, setDebugOpen] = useState(false);
   const [showResult, setShowResult] = useState(false);
+  const [showRefreshWebview, setShowRefreshWebview] = useState(false);
+  const [showSearchWebview, setShowSearchWebview] = useState(false);
 
   const [fetchUrl, setFetchUrl] = useState("https://www.baidu.com");
   const [injectScript, setInjectScript] = useState("");
-  const [step, setStep] = useState("");
   const [sites, setSites] = useState<any[]>([]);
   const [songlist, setSonglist] = useState<any[]>([]);
   const [localSonglist, setLocalSonglist] = useState<any[]>([]);
@@ -38,50 +39,104 @@ export default function HomeScreen() {
   const [selectedSite, setSelectedSite] = useState<string>("");
   const [searchText, setSearchText] = useState<string>("");
 
-  const swiperRef = useRef<Swiper>(null);
+  const swiperRef = useRef<any>(null);
 
   const handleSwiperIndexChange = (index: number) => {
     setActiveTab(index);
-    console.log("Current Swiper index:", index);
   };
 
-  const playSong = (item: any) => {
-    setCurrentSong(item);
-    console.log("playSong", item);
-  };
-
-  const handleSearch = () => {
-    console.log("Selected Site:", selectedSite);
-    console.log("Search Text:", searchText);
-    // 在这里添加搜索逻辑
-    if (selectedSite && searchText) {
-      setStep("searchList");
-      setDebugOpen(false);
-      const url = Music.getSearchUrl(selectedSite, searchText);
-      setFetchUrl(url);
-      setInjectScript(Music.getSearchListScript(selectedSite, url));
-      setTimeout(() => {
-        setDebugOpen(true);
-      }, 1000);
-      console.log(url);
-    } else {
-      Alert.alert("提示", "请输入搜索关键字");
+  // 通过脚本切换 Swiper 示例：
+  const goToSwiperIndex = (index: number) => {
+    if (swiperRef.current && swiperRef.current.scrollBy) {
+      swiperRef.current.scrollBy(index - swiperRef.current.state.index, true);
     }
   };
 
-  const handleSongPress = async (item: any) => {
+  const playSong = (item: any) => {
+    console.log("playSong", item);
     setCurrentSong(item);
-    setStep("searchResource");
-    setDebugOpen(false);
-    setFetchUrl(item.url);
-    setInjectScript(Music.getSearchResourceScript(selectedSite, item));
-
-    setTimeout(() => {
-      setDebugOpen(true);
-    }, 1000);
-    setShowResult(false); // 隐藏搜索结果弹窗
-    console.log("Song pressed:", item);
   };
+
+  const handleSongLoadError = (error: { song: any; error: Error }) => {
+    setShowRefreshWebview(false);
+    console.log("歌曲无法加载，需要更新", error.song);
+    Toast.show("歌曲无法加载，即将自动更新", {
+      duration: Toast.durations.SHORT,
+    });
+    setFetchUrl(error.song.url);
+
+    const siteKey = error.song.siteKey || "22a5";
+    switch (siteKey) {
+      case "22a5":
+        setInjectScript(
+          Music.getRefreshScript(siteKey, {
+            auto: true,
+            delay: 3000,
+          })
+        );
+        break;
+      default:
+        setInjectScript(
+          Music.getRefreshScript(siteKey, {
+            auto: false,
+            delay: 30000,
+          })
+        );
+        break;
+    }
+    setTimeout(() => {
+      setShowRefreshWebview(true);
+    }, 1000);
+  };
+
+  const handleSongPlayEnd = (error: { song: any; error: Error }) => {
+    const currentIndex = localSonglist.findIndex(
+      (item) => item.src === currentSong.src
+    );
+
+    console.log("handleSongPlayEnd");
+    if (currentIndex !== -1 && currentIndex < localSonglist.length - 1) {
+      playSong(localSonglist[currentIndex + 1]);
+      console.log("play next");
+    } else {
+      playSong(localSonglist[0]);
+      console.log("play 0");
+    }
+  };
+
+  const musicPlayerRef = useRef<any>(null);
+  const handleSearch = () => {
+    if (musicPlayerRef.current && musicPlayerRef.current.pause) {
+      musicPlayerRef.current.pause();
+    }
+    // 在这里添加搜索逻辑
+    if (selectedSite && searchText) {
+      setShowSearchWebview(false);
+      const url = Music.getSearchUrl(selectedSite, searchText);
+      setFetchUrl(url);
+      setInjectScript(Music.getSearchScript(selectedSite));
+      setTimeout(() => {
+        console.log("开始搜索歌曲：", url);
+        setShowSearchWebview(true);
+      }, 1000);
+    } else {
+      Toast.show("请输入搜索关键字", {
+        duration: Toast.durations.SHORT,
+      });
+    }
+  };
+
+  // const handleSongPress = async (item: any) => {
+  //   setCurrentSong(item);
+  //   setShowSearchWebview(false);
+  //   setFetchUrl(item.url);
+  //   setInjectScript(Music.getSearchResourceScript(selectedSite, item));
+
+  //   setTimeout(() => {
+  //     setShowSearchWebview(true);
+  //   }, 1000);
+  //   setShowResult(false); // 隐藏搜索结果弹窗
+  // };
 
   const readLocalSongs = async () => {
     const songs = await AsyncStorage.getItem("localSonglist");
@@ -108,20 +163,33 @@ export default function HomeScreen() {
     }
   };
 
-  const pushNewSong = async (item: any) => {
+  const pushOrRefreshSong = async (item: any) => {
+    console.log("pushOrRefreshSong");
     try {
-      const localSong = await AsyncStorage.getItem("localSonglist");
-      let newlocalsong = [];
-      if (localSong) {
-        newlocalsong = JSON.parse(localSong);
-        newlocalsong.push(item);
+      // const localSong = await AsyncStorage.getItem("localSonglist");
+      // let newlocalsong = [];
+      // if (localSong) {
+      //   newlocalsong = JSON.parse(localSong);
+      //   newlocalsong.push(item);
+      // } else {
+      //   newlocalsong = [item];
+      // }
+
+      const newList = [...localSonglist];
+      const idx = newList.findIndex((s) => s.url === item.url);
+      if (idx !== -1) {
+        newList[idx] = item;
+        Toast.show(`歌曲${item.title}已更新`, {
+          duration: Toast.durations.SHORT,
+        });
       } else {
-        newlocalsong = [item];
+        newList.push(item);
+        Toast.show(`歌曲${item.title}已添加`, {
+          duration: Toast.durations.SHORT,
+        });
       }
-      setLocalSonglist(newlocalsong);
-      await AsyncStorage.setItem("localSonglist", JSON.stringify(newlocalsong));
-      console.log("Song saved to AsyncStorage");
-      Alert.alert("提示", "歌曲已添加");
+      setLocalSonglist(newList);
+      await AsyncStorage.setItem("localSonglist", JSON.stringify(newList));
     } catch (e) {
       console.error("Error saving song to AsyncStorage:", e);
     }
@@ -132,12 +200,34 @@ export default function HomeScreen() {
     if (!msg.action) {
       return;
     }
-    console.log(msg.action);
-    console.log(msg.data);
+
+    // console.log(msg.action);
+    // console.log(msg.data);
     switch (msg.action) {
       case "songResource":
-        // setCurrentSong(msg.data);
-        await pushNewSong(msg.data);
+        console.log("handleContentFetched-----songResource");
+
+        await pushOrRefreshSong(msg.data);
+        setShowSearchWebview(false);
+        goToSwiperIndex(1);
+
+        setTimeout(() => {
+          setCurrentSong(msg.data);
+        }, 1000);
+        break;
+
+      case "refreshResource":
+        console.log("handleContentFetched-----refreshResource");
+
+        await pushOrRefreshSong(msg.data);
+        setShowRefreshWebview(false);
+        goToSwiperIndex(1);
+        setTimeout(() => {
+          setCurrentSong(msg.data);
+        }, 1000);
+        break;
+
+      default:
         break;
     }
   };
@@ -157,20 +247,31 @@ export default function HomeScreen() {
       {/* 选项卡和搜索区域 */}
       <View style={styles.searchSection}>
         <View style={styles.tabs}>
-          <ThemedText style={[styles.tab, activeTab === 0 && styles.activeTab]}>
+          <ThemedText
+            onPress={() => goToSwiperIndex(0)}
+            style={[styles.tab, activeTab === 0 && styles.activeTab]}
+          >
             音乐搜索
           </ThemedText>
-          <ThemedText style={[styles.tab, activeTab === 1 && styles.activeTab]}>
+          <ThemedText
+            onPress={() => goToSwiperIndex(1)}
+            style={[styles.tab, activeTab === 1 && styles.activeTab]}
+          >
             播放器
           </ThemedText>
-          <ThemedText style={[styles.tab, activeTab === 2 && styles.activeTab]}>
+          <ThemedText
+            onPress={() => goToSwiperIndex(2)}
+            style={[styles.tab, activeTab === 2 && styles.activeTab]}
+          >
             播放列表
           </ThemedText>
         </View>
 
         <Swiper
+          ref={swiperRef}
           style={styles.wrapper}
           showsButtons={false}
+          removeClippedSubviews={false}
           loop={false}
           dotStyle={styles.dotStyle}
           onIndexChanged={handleSwiperIndexChange}
@@ -178,17 +279,11 @@ export default function HomeScreen() {
         >
           <View key="searchTab" style={styles.slide}>
             <View style={styles.searchBox}>
-              {/* <TextInput
-                style={styles.searchInput}
-                placeholder="请输入关键字"
-                placeholderTextColor="#dbdbdb"
-                value={searchText}
-              /> */}
-
               <TextInput
                 style={styles.searchInput}
                 placeholder="请输入内容"
                 placeholderTextColor="#dbdbdb"
+                // value={searchText}
                 onChangeText={(value) => setSearchText(value)}
               />
             </View>
@@ -238,7 +333,7 @@ export default function HomeScreen() {
                     renderItem={({ item }) => (
                       <TouchableOpacity
                         style={styles.songItem}
-                        onPress={() => handleSongPress(item)}
+                        // onPress={() => handleSongPress(item)}
                       >
                         <ThemedText style={styles.songTitleText}>
                           {item.title}
@@ -260,7 +355,7 @@ export default function HomeScreen() {
             </Modal>
 
             <View style={styles.debugWeb}>
-              {debugOpen && (
+              {showSearchWebview && (
                 <WebViewFetcher
                   injectedScript={injectScript}
                   height={440}
@@ -272,10 +367,62 @@ export default function HomeScreen() {
           </View>
 
           <View key="playerTab" style={styles.slide}>
-            <MusicPlayer song={currentSong} />
+            <MusicPlayer
+              ref={musicPlayerRef}
+              song={currentSong}
+              onSongLoadError={handleSongLoadError}
+              onSongPlayEnd={handleSongPlayEnd}
+            />
+
+            {/* <Modal
+              animationType="slide"
+              transparent={true}
+              visible={showRefresh}
+              onRequestClose={() => {
+                setShowRefresh(!showRefresh);
+              }}
+            >
+              <View style={styles.centeredView}>
+                <View style={styles.modalView}>
+                  <WebViewFetcher
+                    injectedScript={injectScript}
+                    height={440}
+                    url={fetchUrl}
+                    onContentFetched={handleContentFetched}
+                  />
+                  <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={() => setShowRefresh(false)}
+                  >
+                    <ThemedText style={styles.textStyle}>关闭</ThemedText>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal> */}
+
+            {/* <View style={styles.debugWeb}>
+              {
+                <WebViewFetcher
+                  injectedScript={injectScript}
+                  height={440}
+                  url={fetchUrl}
+                  onContentFetched={handleContentFetched}
+                />
+              }
+            </View> */}
           </View>
 
           <View key="playlistTab" style={styles.slide}>
+            <View style={styles.debugWeb}>
+              {showRefreshWebview && (
+                <WebViewFetcher
+                  injectedScript={injectScript}
+                  height={440}
+                  url={fetchUrl}
+                  onContentFetched={handleContentFetched}
+                />
+              )}
+            </View>
             <FlatList
               data={localSonglist}
               keyExtractor={(item, index) => index.toString()}
@@ -283,7 +430,7 @@ export default function HomeScreen() {
                 <View
                   style={[
                     styles.songItem,
-                    currentSong && currentSong.title === item.title
+                    currentSong && currentSong.url === item.url
                       ? styles.playingSongItem
                       : null,
                   ]}
@@ -489,7 +636,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   searchInput: {
-    fontSize: 16,
+    fontSize: 26,
     color: "#333",
   },
   searchButton: {
