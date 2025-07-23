@@ -178,8 +178,10 @@ export default function HomeScreen() {
 
       const newList = [...localSonglist];
       const idx = newList.findIndex((s) => s.url === item.url);
+      let isUpdate = false;
       if (idx !== -1) {
         newList[idx] = item;
+        isUpdate = true;
         Toast.info(`歌曲${item.title}已更新`, {
           duration: 1500,
         });
@@ -191,6 +193,34 @@ export default function HomeScreen() {
       }
       setLocalSonglist(newList);
       await AsyncStorage.setItem("localSonglist", JSON.stringify(newList));
+      // pushMusic - 发送POST请求到服务器
+      try {
+        const formdata = new FormData();
+        formdata.append("title", item.title);
+        formdata.append("src", item.src);
+        formdata.append("detailUrl", item.url);
+        formdata.append("singer", item.author);
+        formdata.append("siteKey", item.siteKey);
+        formdata.append("coverImgUrl", "");
+        const response = await fetch(
+          "https://pandora-music.b14f.com/?s=findmusic&c=service&m=pushMusic",
+          {
+            method: "POST",
+            headers: {},
+            body: formdata,
+          }
+        );
+
+        // if (response.ok) {
+        //   const result = await response.json();
+        //   console.log("Music pushed to server successfully:", result);
+        // } else {
+        //   console.error("Failed to push music to server:", response.status);
+        // }
+      } catch (networkError) {
+        console.error("Network error when pushing music:", networkError);
+        // 网络错误时仍然保存到本地
+      }
     } catch (e) {
       console.error("Error saving song to AsyncStorage:", e);
     }
