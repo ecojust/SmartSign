@@ -55,7 +55,11 @@ export default function HomeScreen() {
 
   const playSong = (item: any) => {
     console.log("playSong", item);
-    setCurrentSong(item);
+    if (!item.src) {
+      handleSongLoadError({ song: item, error: new Error("歌曲无法加载") });
+    } else {
+      setCurrentSong(item);
+    }
   };
 
   const handleSongLoadError = (error: { song: any; error: Error }) => {
@@ -203,7 +207,7 @@ export default function HomeScreen() {
         formdata.append("siteKey", item.siteKey);
         formdata.append("coverImgUrl", "");
         const response = await fetch(
-          "https://pandora-music.b14f.com/?s=findmusic&c=service&m=pushMusic",
+          "https://pandora-music.b14f.com/?s=findmusic&c=service&m=push",
           {
             method: "POST",
             headers: {},
@@ -236,11 +240,11 @@ export default function HomeScreen() {
     // console.log(msg.data);
     switch (msg.action) {
       case "songResource":
-        console.log("handleContentFetched-----songResource");
+        console.log("handleContentFetched-----songResource", msg.data);
 
         await pushOrRefreshSong(msg.data);
-        setShowSearchWebview(false);
-        goToSwiperIndex(1);
+        // setShowSearchWebview(false);
+        // goToSwiperIndex(1);
 
         setTimeout(() => {
           setCurrentSong(msg.data);
@@ -248,7 +252,7 @@ export default function HomeScreen() {
         break;
 
       case "refreshResource":
-        console.log("handleContentFetched-----refreshResource");
+        console.log("handleContentFetched-----refreshResource", msg.data);
 
         await pushOrRefreshSong(msg.data);
         setShowRefreshWebview(false);

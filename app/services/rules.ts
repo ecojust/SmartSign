@@ -7,11 +7,11 @@ export default class Music {
       key: "22a5",
       steps: ["searchList"],
     },
-    {
-      name: "煎饼搜",
-      key: "jbsou",
-      steps: ["searchList"],
-    },
+    // {
+    //   name: "煎饼搜",
+    //   key: "jbsou",
+    //   steps: ["searchList"],
+    // },
 
     // {
     //   name: "九酷",

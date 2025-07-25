@@ -43,6 +43,9 @@ export default class Extract {
                     song.src = $("#player")[0][item].jPlayer.status.src;
                   }
                 })
+                if(!song.src){
+                  song.src = $("#player")[0].children[1].src;
+                }
                 window.ReactNativeWebView.postMessage(JSON.stringify({
                   action:'${action}',
                   data:song
