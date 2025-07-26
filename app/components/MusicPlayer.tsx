@@ -11,6 +11,7 @@ import {
   StyleSheet,
   Modal,
   Animated,
+  Image,
 } from "react-native";
 import { Audio } from "expo-av";
 import { Linking } from "react-native";
@@ -35,6 +36,10 @@ const MusicPlayer: React.FC<MusicPlayerProps> = forwardRef(
     const [duration, setDuration] = useState(0);
     const [isExpanded, setIsExpanded] = useState(true);
     const [slideAnim] = useState(new Animated.Value(0));
+
+    const playIcon = require("../../assets/icons/play.png");
+    const pauseIcon = require("../../assets/icons/pause.png");
+    const nextIcon = require("../../assets/icons/step-forward.png");
 
     useImperativeHandle(ref, () => ({
       playSong,
@@ -186,16 +191,18 @@ const MusicPlayer: React.FC<MusicPlayerProps> = forwardRef(
                   onPress={handlePlayPause}
                   style={styles.compactButton}
                 >
-                  <Text style={styles.compactButtonText}>
-                    {isPlaying ? "⏸" : "▶"}
-                  </Text>
+                  {isPlaying ? (
+                    <Image source={pauseIcon} style={[styles.controlIcon]} />
+                  ) : (
+                    <Image source={playIcon} style={[styles.controlIcon]} />
+                  )}
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   onPress={handleNextSong}
                   style={styles.compactButton}
                 >
-                  <Text style={styles.compactButtonText}>⏭</Text>
+                  <Image source={nextIcon} style={[styles.controlIcon]} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -319,8 +326,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#282828",
     // padding: 20,
-    borderColor: "rgb(255,0,0)",
-    borderWidth: 2,
+    // borderColor: "rgb(255,0,0)",
+    // borderWidth: 2,
   },
   playerContainer: {
     width: "100%",
@@ -355,6 +362,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     backgroundColor: "#333",
     borderRadius: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.9,
+    shadowRadius: 6,
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    elevation: 12,
     // marginBottom: 5,
     // borderColor: "rgb(255,255,0)",
     // borderWidth: 2,
@@ -391,21 +406,23 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginLeft: 5,
   },
-  compactButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
+  controlIcon: {
+    width: 36,
+    height: 16,
+    paddingHorizontal: 10,
+    resizeMode: "contain",
   },
   detailButton: {
     backgroundColor: "#555",
-    paddingVertical: 8,
+    // backgroundColor: "#1DB954",
+    paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 20,
     marginLeft: 5,
   },
   detailButtonText: {
     color: "#fff",
-    fontSize: 12,
+    fontSize: 14,
   },
 
   // 详情模式样式

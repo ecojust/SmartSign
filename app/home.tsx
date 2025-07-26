@@ -431,7 +431,15 @@ export default function HomeScreen() {
             />
           </View> */}
 
-          <View key="playlistTab" style={styles.slide}>
+          <View
+            key="playlistTab"
+            style={[
+              styles.slide,
+              {
+                paddingBottom: 60,
+              },
+            ]}
+          >
             <View style={styles.debugWeb}>
               {showRefreshWebview && (
                 <WebViewFetcher
