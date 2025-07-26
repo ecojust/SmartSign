@@ -4,7 +4,14 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Modal } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
+  Animated,
+} from "react-native";
 import { Audio } from "expo-av";
 import { Linking } from "react-native";
 import { WebViewFetcher } from "../services/webviewFetcher";
@@ -16,15 +23,18 @@ interface MusicPlayerProps {
   song: any;
   onSongLoadError?: (error: { song: any; error: Error }) => void;
   onSongPlayEnd?: (error: { song: any; error: Error }) => void;
+  onNextSong?: () => void;
   ref: any;
 }
 
 const MusicPlayer: React.FC<MusicPlayerProps> = forwardRef(
-  ({ song, onSongLoadError, onSongPlayEnd }, ref) => {
+  ({ song, onSongLoadError, onSongPlayEnd, onNextSong }, ref) => {
     const [sound, setSound] = useState<Audio.Sound | undefined>(undefined);
     const [isPlaying, setIsPlaying] = useState(false);
     const [position, setPosition] = useState(0);
     const [duration, setDuration] = useState(0);
+    const [isExpanded, setIsExpanded] = useState(true);
+    const [slideAnim] = useState(new Animated.Value(0));
 
     useImperativeHandle(ref, () => ({
       playSong,
@@ -127,6 +137,23 @@ const MusicPlayer: React.FC<MusicPlayerProps> = forwardRef(
       }
     };
 
+    const toggleExpanded = () => {
+      const toValue = isExpanded ? 0 : 1;
+      setIsExpanded(!isExpanded);
+
+      Animated.timing(slideAnim, {
+        toValue,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    };
+
+    const handleNextSong = () => {
+      if (onNextSong) {
+        onNextSong();
+      }
+    };
+
     const formatTime = (millis: number) => {
       const minutes = Math.floor(millis / 60000);
       const seconds = ((millis % 60000) / 1000).toFixed(0);
@@ -136,135 +163,149 @@ const MusicPlayer: React.FC<MusicPlayerProps> = forwardRef(
     return (
       <View style={styles.container}>
         {song && song.title ? (
-          <View>
-            <View style={styles.infoBlock}>
-              <Text style={styles.infoLabel}>源站标识：</Text>
-              <Text
-                style={styles.infoValue}
-                numberOfLines={1}
-                ellipsizeMode="middle"
-                selectable
-              >
-                {song.siteKey}
-              </Text>
-            </View>
-            <View style={styles.infoBlock}>
-              <Text style={styles.infoLabel}>音频地址：</Text>
-              <Text
-                style={styles.infoValue}
-                numberOfLines={1}
-                ellipsizeMode="middle"
-                selectable
-              >
-                {song.src}
-              </Text>
-            </View>
-            <View style={styles.infoBlock}>
-              <Text style={styles.infoLabel}>来源链接：</Text>
-              <Text
-                style={[styles.infoValue]}
-                numberOfLines={1}
-                ellipsizeMode="middle"
-                selectable
-                // onPress={() => song.url && Linking.openURL(song.url)}
-              >
-                {song.url}
-              </Text>
-            </View>
-            <Text style={styles.title}>{song.title}</Text>
-            <Text style={styles.artist}>{song.author}</Text>
+          <View style={styles.playerContainer}>
+            {/* 简短模式 - 始终显示 */}
+            <View style={styles.compactPlayer}>
+              <View style={styles.songInfo}>
+                <Text style={styles.compactTitle} numberOfLines={1}>
+                  {song.title}
+                </Text>
+                <Text style={styles.compactArtist} numberOfLines={1}>
+                  {song.author}
+                </Text>
+              </View>
 
-            <View style={styles.timeContainer}>
-              <Text style={styles.timeText}>{formatTime(position)}</Text>
-              <Text style={styles.timeText}>{formatTime(duration)}</Text>
+              <View style={styles.timeDisplay}>
+                <Text style={styles.compactTime}>
+                  {formatTime(position)} / {formatTime(duration)}
+                </Text>
+              </View>
+
+              <View style={styles.controls}>
+                <TouchableOpacity
+                  onPress={handlePlayPause}
+                  style={styles.compactButton}
+                >
+                  <Text style={styles.compactButtonText}>
+                    {isPlaying ? "⏸" : "▶"}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={handleNextSong}
+                  style={styles.compactButton}
+                >
+                  <Text style={styles.compactButtonText}>⏭</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={toggleExpanded}
+                  style={styles.detailButton}
+                >
+                  <Text style={styles.detailButtonText}>
+                    {isExpanded ? "收起" : "详情"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            <TouchableOpacity
-              onPress={handlePlayPause}
+
+            {/* 进度条 - 始终显示 */}
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBar}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    {
+                      width:
+                        duration > 0 ? `${(position / duration) * 100}%` : "0%",
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+
+            {/* 详情模式 - 动画展开 */}
+            <Animated.View
               style={[
-                styles.playButton,
-                { position: "relative", overflow: "hidden" },
+                styles.expandedPlayer,
+                {
+                  height: slideAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 145],
+                  }),
+                  opacity: slideAnim,
+                },
               ]}
             >
-              <View
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  width:
-                    duration > 0 ? `${(position / duration) * 100}%` : "0%",
-                  backgroundColor: "rgba(255,255,255,0.3)",
-                  zIndex: 1,
-                }}
-              />
-              <Text
-                style={[
-                  styles.playButtonText,
-                  { zIndex: 2, textAlign: "center", width: "100%" },
-                ]}
-              >
-                {isPlaying ? "暂停" : "播放"}
-              </Text>
-            </TouchableOpacity>
+              <View style={styles.detailContent}>
+                <View style={styles.infoBlock}>
+                  <Text style={styles.infoLabel}>源站标识：</Text>
+                  <Text
+                    style={styles.infoValue}
+                    numberOfLines={1}
+                    ellipsizeMode="middle"
+                    selectable
+                  >
+                    {song.siteKey}
+                  </Text>
+                </View>
+                <View style={styles.infoBlock}>
+                  <Text style={styles.infoLabel}>音频地址：</Text>
+                  <Text
+                    style={styles.infoValue}
+                    numberOfLines={1}
+                    ellipsizeMode="middle"
+                    selectable
+                  >
+                    {song.src}
+                  </Text>
+                </View>
+                <View style={styles.infoBlock}>
+                  <Text style={styles.infoLabel}>来源链接：</Text>
+                  <Text
+                    style={styles.infoValue}
+                    numberOfLines={1}
+                    ellipsizeMode="middle"
+                    selectable
+                  >
+                    {song.url}
+                  </Text>
+                </View>
+
+                {/* <TouchableOpacity
+                  onPress={handlePlayPause}
+                  style={[
+                    styles.playButton,
+                    { position: "relative", overflow: "hidden" },
+                  ]}
+                >
+                  <View
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width:
+                        duration > 0 ? `${(position / duration) * 100}%` : "0%",
+                      backgroundColor: "rgba(255,255,255,0.3)",
+                      zIndex: 1,
+                    }}
+                  />
+                  <Text
+                    style={[
+                      styles.playButtonText,
+                      { zIndex: 2, textAlign: "center", width: "100%" },
+                    ]}
+                  >
+                    {isPlaying ? "暂停" : "播放"}
+                  </Text>
+                </TouchableOpacity> */}
+              </View>
+            </Animated.View>
           </View>
         ) : (
           <Text style={styles.noSongText}>请选择一首歌曲播放</Text>
         )}
-
-        {/* <Modal
-        animationType="slide"
-        transparent={true}
-        visible={showRefresh}
-        onRequestClose={() => {
-          setShowRefresh(!showRefresh);
-        }}
-      >
-        <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            <View style={styles.webViewContainer}>
-              {debugOpen && (
-                <WebViewFetcher
-                  injectedScript={injectScript}
-                  height={440}
-                  url={fetchUrl}
-                  onContentFetched={handleContentFetched}
-                />
-              )}
-            </View>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowRefresh(false)}
-            >
-              <ThemedText style={styles.textStyle}>关闭</ThemedText>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal> */}
-
-        {/* {modalVisible && (
-        <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            
-            <TouchableOpacity
-              style={{ marginTop: 20 }}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text>关闭</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )} */}
-
-        {/* <View style={styles.webViewContainer}>
-        {debugOpen && (
-          <WebViewFetcher
-            injectedScript={injectScript}
-            height={440}
-            url={fetchUrl}
-            onContentFetched={handleContentFetched}
-          />
-        )}
-      </View> */}
       </View>
     );
   }
@@ -277,7 +318,107 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     alignItems: "center",
     backgroundColor: "#282828",
-    padding: 20,
+    // padding: 20,
+    borderColor: "rgb(255,0,0)",
+    borderWidth: 2,
+  },
+  playerContainer: {
+    width: "100%",
+    // borderColor: "rgb(255,155,0)",
+    // borderWidth: 2,
+    flexDirection: "column-reverse",
+    position: "absolute",
+    bottom: 0,
+  },
+  // 进度条样式
+  progressContainer: {
+    width: "100%",
+    paddingHorizontal: 15,
+    marginBottom: -6,
+    // display: "none",
+  },
+  progressBar: {
+    height: 3,
+    backgroundColor: "#555",
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#1DB954",
+  },
+  // 简短模式样式
+  compactPlayer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    backgroundColor: "#333",
+    borderRadius: 10,
+    // marginBottom: 5,
+    // borderColor: "rgb(255,255,0)",
+    // borderWidth: 2,
+  },
+  songInfo: {
+    flex: 1,
+    marginRight: 10,
+  },
+  compactTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#fff",
+    marginBottom: 2,
+  },
+  compactArtist: {
+    fontSize: 14,
+    color: "#b3b3b3",
+  },
+  timeDisplay: {
+    marginRight: 10,
+  },
+  compactTime: {
+    fontSize: 12,
+    color: "#b3b3b3",
+  },
+  controls: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  compactButton: {
+    backgroundColor: "#1DB954",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginLeft: 5,
+  },
+  compactButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  detailButton: {
+    backgroundColor: "#555",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginLeft: 5,
+  },
+  detailButtonText: {
+    color: "#fff",
+    fontSize: 12,
+  },
+
+  // 详情模式样式
+  expandedPlayer: {
+    width: "100%",
+    overflow: "hidden",
+    // borderColor: "rgb(155,155,0)",
+    // borderWidth: 2,
+  },
+  detailContent: {
+    padding: 15,
+    backgroundColor: "#333",
+    borderRadius: 10,
   },
   title: {
     fontSize: 24,

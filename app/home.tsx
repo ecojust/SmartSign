@@ -109,6 +109,21 @@ export default function HomeScreen() {
     }
   };
 
+  const handleNextSong = () => {
+    const currentIndex = localSonglist.findIndex(
+      (item) => item.src === currentSong?.src
+    );
+
+    console.log("handleNextSong");
+    if (currentIndex !== -1 && currentIndex < localSonglist.length - 1) {
+      playSong(localSonglist[currentIndex + 1]);
+      console.log("play next");
+    } else if (localSonglist.length > 0) {
+      playSong(localSonglist[0]);
+      console.log("play 0");
+    }
+  };
+
   const musicPlayerRef = useRef<any>(null);
   const handleSearch = () => {
     if (musicPlayerRef.current && musicPlayerRef.current.pause) {
@@ -243,12 +258,10 @@ export default function HomeScreen() {
         console.log("handleContentFetched-----songResource", msg.data);
 
         await pushOrRefreshSong(msg.data);
-        // setShowSearchWebview(false);
+        setShowSearchWebview(false);
         // goToSwiperIndex(1);
+        setCurrentSong(msg.data);
 
-        setTimeout(() => {
-          setCurrentSong(msg.data);
-        }, 1000);
         break;
 
       case "refreshResource":
@@ -256,10 +269,9 @@ export default function HomeScreen() {
 
         await pushOrRefreshSong(msg.data);
         setShowRefreshWebview(false);
-        goToSwiperIndex(1);
-        setTimeout(() => {
-          setCurrentSong(msg.data);
-        }, 1000);
+        // goToSwiperIndex(1);
+        setCurrentSong(msg.data);
+
         break;
 
       default:
@@ -301,14 +313,14 @@ export default function HomeScreen() {
             onPress={() => goToSwiperIndex(1)}
             style={[styles.tab, activeTab === 1 && styles.activeTab]}
           >
-            播放器
+            播放列表
           </ThemedText>
-          <ThemedText
+          {/* <ThemedText
             onPress={() => goToSwiperIndex(2)}
             style={[styles.tab, activeTab === 2 && styles.activeTab]}
           >
             播放列表
-          </ThemedText>
+          </ThemedText> */}
         </View>
 
         <Swiper
@@ -410,51 +422,14 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          <View key="playerTab" style={styles.slide}>
+          {/* <View key="playerTab" style={styles.slide}>
             <MusicPlayer
               ref={musicPlayerRef}
               song={currentSong}
               onSongLoadError={handleSongLoadError}
               onSongPlayEnd={handleSongPlayEnd}
             />
-
-            {/* <Modal
-              animationType="slide"
-              transparent={true}
-              visible={showRefresh}
-              onRequestClose={() => {
-                setShowRefresh(!showRefresh);
-              }}
-            >
-              <View style={styles.centeredView}>
-                <View style={styles.modalView}>
-                  <WebViewFetcher
-                    injectedScript={injectScript}
-                    height={440}
-                    url={fetchUrl}
-                    onContentFetched={handleContentFetched}
-                  />
-                  <TouchableOpacity
-                    style={styles.closeButton}
-                    onPress={() => setShowRefresh(false)}
-                  >
-                    <ThemedText style={styles.textStyle}>关闭</ThemedText>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </Modal> */}
-
-            {/* <View style={styles.debugWeb}>
-              {
-                <WebViewFetcher
-                  injectedScript={injectScript}
-                  height={440}
-                  url={fetchUrl}
-                  onContentFetched={handleContentFetched}
-                />
-              }
-            </View> */}
-          </View>
+          </View> */}
 
           <View key="playlistTab" style={styles.slide}>
             <View style={styles.debugWeb}>
@@ -510,13 +485,13 @@ export default function HomeScreen() {
 
       {/* 底部播放控制条 */}
       <View style={styles.bottomPlayer}>
-        <ThemedText style={styles.songTitle}>凄美地</ThemedText>
-        <View style={styles.playerControls}>
-          {/* 假设这里是播放控制图标 */}
-          <ThemedText>≡</ThemedText>
-          <ThemedText>Ⅱ</ThemedText>
-          <ThemedText>▷|</ThemedText>
-        </View>
+        <MusicPlayer
+          ref={musicPlayerRef}
+          song={currentSong}
+          onSongLoadError={handleSongLoadError}
+          onSongPlayEnd={handleSongPlayEnd}
+          onNextSong={handleNextSong}
+        />
       </View>
     </ThemedView>
   );
@@ -750,12 +725,12 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#333",
+    // backgroundColor: "#333",
     flexDirection: "row",
     alignItems: "center",
-    padding: 10,
-    height: 70,
-    display: "none",
+    height: 0,
+    paddingHorizontal: 10,
+    // display: "none",
   },
   centeredView: {
     flex: 1,
