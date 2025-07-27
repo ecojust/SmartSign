@@ -36,14 +36,8 @@ v1.0.0【2025.07.25】
 
 ### 🔗 友情链接
 
-- 上车，走吧（一款查询沿途余票的小程序，买短乘长）
+- 小程序
 
   <img src="./preview/gh_d28e95a34b97_1280.jpg" width="30%" style="margin:10px 1%" alt="上车走吧" />
-
-- 巷里帮（视频播放小程序，平时找的可看的电视剧电影都放在上面了）
-
   <img src="./preview/gh_ca37680cc456_1280.jpg" width="30%" style="margin:10px 1%" alt="视频播放" />
-
-- Task Agent（自动化执行一些任务的小程序，目前有自动化查票，不同品牌汽车历年上牌数统计...）
-
   <img src="./preview/gh_0a031a9291c4_1280.jpg" width="30%" style="margin:10px 1%" alt="自动化任务代理" />
