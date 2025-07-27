@@ -35,10 +35,6 @@ export default function HomeScreen() {
     }
   };
 
-  useEffect(() => {
-    console.log("redner");
-  }, []);
-
   const switchMode = async () => {
     await destroySwiper();
     const currentModeIndex = modes.findIndex((m) => m == currentMode);
@@ -48,7 +44,12 @@ export default function HomeScreen() {
     } else {
       setCurrentMode(modes[currentModeIndex + 1]);
     }
+    setActiveTab(0);
   };
+
+  useEffect(() => {
+    console.log("home render");
+  }, []);
 
   return (
     <ThemedView style={styles.container}>
