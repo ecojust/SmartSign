@@ -57,6 +57,16 @@ const MusicPlayer: React.FC<MusicPlayerProps> = forwardRef(
           setIsPlaying(true);
         }
       },
+      destroy: async () => {
+        if (sound) {
+          sound.unloadAsync();
+          setSound(undefined);
+          setIsPlaying(false);
+          setPosition(0);
+          setDuration(0);
+          console.log("music player destroyed");
+        }
+      },
     }));
 
     useEffect(() => {

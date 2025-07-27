@@ -25,11 +25,22 @@ export default function HomeScreen() {
     }
   };
 
+  const destroySwiper = async () => {
+    switch (currentMode) {
+      case "music":
+        if (musicSwiperRef.current && musicSwiperRef.current.destroy) {
+          await musicSwiperRef.current.destroy();
+        }
+        break;
+    }
+  };
+
   useEffect(() => {
     console.log("redner");
   }, []);
 
-  const switchMode = () => {
+  const switchMode = async () => {
+    await destroySwiper();
     const currentModeIndex = modes.findIndex((m) => m == currentMode);
     const length = modes.length;
     if (currentModeIndex + 1 >= length) {

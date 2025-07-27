@@ -63,7 +63,11 @@ const MusicSwiper: React.FC<MusicSwiperProps> = forwardRef(
           );
         }
       },
-      resume: async () => {},
+      destroy: async () => {
+        if (musicPlayerRef.current && musicPlayerRef.current.destroy) {
+          await musicPlayerRef.current.destroy();
+        }
+      },
     }));
 
     const handleSwiperIndexChange = (index: number) => {

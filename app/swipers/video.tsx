@@ -278,13 +278,13 @@ const VideoSwiper: React.FC<VideoSwiperProps> = forwardRef(
     };
 
     useEffect(() => {
-      setFetchUrl("https://www.baidu.com");
-      setSites(Music.sites);
-      if (Music.sites.length > 0) {
-        setSelectedSite(Music.sites[0].key);
-      }
-      readLocalSongs();
-      console.log("music swiper render");
+      //   setFetchUrl("https://www.baidu.com");
+      //   setSites(Music.sites);
+      //   if (Music.sites.length > 0) {
+      //     setSelectedSite(Music.sites[0].key);
+      //   }
+      //   readLocalSongs();
+      console.log("video swiper render");
     }, []);
 
     return (
