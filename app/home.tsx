@@ -9,7 +9,9 @@ import ToastManager, { Toast } from "expo-react-native-toastify";
 
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState(0);
-  const [currentMode, setCurrentMode] = useState("video");
+  const [modes, setModes] = useState(["music", "video"]);
+  const [currentMode, setCurrentMode] = useState("music");
+
   const musicSwiperRef = useRef<any>(null);
 
   // 通过脚本切换 Swiper 示例：
@@ -28,7 +30,13 @@ export default function HomeScreen() {
   }, []);
 
   const switchMode = () => {
-    setCurrentMode("music");
+    const currentModeIndex = modes.findIndex((m) => m == currentMode);
+    const length = modes.length;
+    if (currentModeIndex + 1 >= length) {
+      setCurrentMode(modes[0]);
+    } else {
+      setCurrentMode(modes[currentModeIndex + 1]);
+    }
   };
 
   return (
@@ -41,18 +49,18 @@ export default function HomeScreen() {
             onPress={() => goToSwiperIndex(0)}
             style={[styles.tab, activeTab === 0 && styles.activeTab]}
           >
-            音乐搜索
+            搜索
           </ThemedText>
 
           <ThemedText onPress={() => switchMode()} style={[styles.mode]}>
-            模式（音乐）
+            音乐
           </ThemedText>
 
           <ThemedText
             onPress={() => goToSwiperIndex(1)}
             style={[styles.tab, activeTab === 1 && styles.activeTab]}
           >
-            播放列表
+            列表
           </ThemedText>
         </View>
 
@@ -88,7 +96,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mode: {
-    color: "rgb(255,255,255)",
+    // backgroundColor: "#555",
+    backgroundColor: "#1DB954",
+    paddingVertical: 5,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    marginLeft: 5,
+    color: "#fff",
+    fontSize: 14,
   },
   tabs: {
     flexDirection: "row",

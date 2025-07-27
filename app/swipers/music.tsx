@@ -343,7 +343,6 @@ const MusicSwiper: React.FC<MusicSwiperProps> = forwardRef(
               <View style={styles.debugWeb}>
                 {showSearchWebview && (
                   <WebViewFetcher
-                    scanRequest
                     injectedScript={injectScript}
                     height={440}
                     url={fetchUrl}
@@ -366,7 +365,6 @@ const MusicSwiper: React.FC<MusicSwiperProps> = forwardRef(
               <View style={styles.debugWeb}>
                 {showRefreshWebview && (
                   <WebViewFetcher
-                    scanRequest
                     injectedScript={injectScript}
                     height={440}
                     url={fetchUrl}
