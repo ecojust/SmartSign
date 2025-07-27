@@ -109,7 +109,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = forwardRef(
         setPosition(status.positionMillis);
         setDuration(status.durationMillis || 0);
         setIsPlaying(status.isPlaying);
-        console.log(status.positionMillis, status.durationMillis);
+        // console.log(status.positionMillis, status.durationMillis);
 
         if (status.durationMillis - status.positionMillis <= 1000) {
           console.log("歌曲播放结束");

@@ -18,6 +18,19 @@ export const WebViewFetcher = ({
   const [loading, setLoading] = useState(true);
   const webViewRef = useRef(null);
 
+  const httpListenerScript = `
+    var originalOpen = XMLHttpRequest.prototype.open;
+    console.log('originalOpen');
+    XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
+      console.log('Request URL:', url); // 打印请求的URL
+      this.addEventListener('load', function() {
+        console.log('Response URL:', url); // 打印响应的URL（可选）
+      });
+      originalOpen.call(this, method, url, async, user, password);
+    };
+  
+  `;
+
   const handleMessage = (event: any) => {
     const content = event.nativeEvent.data;
     onContentFetched(content);
@@ -30,7 +43,9 @@ export const WebViewFetcher = ({
         source={{ uri: url }}
         onLoad={() => setLoading(false)}
         onMessage={handleMessage}
-        injectedJavaScript={injectedScript}
+        injectedJavaScriptBeforeContentLoaded={
+          httpListenerScript + injectedScript
+        }
       />
     </View>
   );

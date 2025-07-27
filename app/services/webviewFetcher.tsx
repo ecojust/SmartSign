@@ -7,13 +7,39 @@ interface WebViewFetcherProps {
   onContentFetched: (content: string) => void;
   height: DimensionValue;
   injectedScript: string;
+  scanRequest?: boolean;
 }
+
+const scanRequestScript = `
+  var originalOpen = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
+    window.ReactNativeWebView.postMessage(JSON.stringify({
+        action:'request',
+        data:url
+      }));
+    this.addEventListener('load', function() {
+      console.log('Response URL:', url); // 打印响应的URL（可选）
+    });
+    originalOpen.call(this, method, url, async, user, password);
+  };
+`;
+
+const aTagNoJump = `
+  window.open = function(url) {
+    window.location = url;
+  };
+  var links = document.querySelectorAll('a[target="_blank"]');
+  for (var i = 0; i < links.length; i++) {
+    links[i].setAttribute('target', '_self');
+  }
+`;
 
 export const WebViewFetcher = ({
   url,
   onContentFetched,
   height = 300,
   injectedScript = "",
+  scanRequest = false,
 }: WebViewFetcherProps) => {
   const [loading, setLoading] = useState(true);
   const webViewRef = useRef(null);
@@ -30,23 +56,16 @@ export const WebViewFetcher = ({
         source={{ uri: url }}
         onLoad={() => setLoading(false)}
         onMessage={handleMessage}
+        injectedJavaScriptBeforeContentLoaded={`
+         ${scanRequest ? scanRequestScript : ""}
+        `}
         injectedJavaScript={`
           (function() {
-            window.open = function(url) {
-              window.location = url;
-            };
-            var links = document.querySelectorAll('a[target="_blank"]');
-            for (var i = 0; i < links.length; i++) {
-              links[i].setAttribute('target', '_self');
-            }
+            ${aTagNoJump}
           })();
           ${injectedScript}
         `}
         setSupportMultipleWindows={false}
-        onShouldStartLoadWithRequest={(event) => {
-          // 阻止外部浏览器打开链接，全部在 WebView 内部加载
-          return true;
-        }}
       />
     </View>
   );
